@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rule Engine</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <h1>Rule Engine</h1>
+
+      <div class="input-section">
+        <h2>Create Rule</h2>
+        <textarea
+          id="ruleString"
+          placeholder="Enter rule string (e.g., response_time > 200 && error_rate > 0.05)"
+        ></textarea>
+        <button id="createRuleBtn">Create Rule</button>
+      </div>
+
+      <div class="input-section">
+        <h2>Evaluate Rule</h2>
+        <textarea
+          id="evaluationData"
+          placeholder='Enter evaluation data (e.g., {"response_time": 250, "error_rate": 0.06})'
+        ></textarea>
+        <button id="evaluateRuleBtn">Evaluate Rule</button>
+      </div>
+
+      <div class="result-section">
+        <h2>Result</h2>
+        <pre id="resultOutput"></pre>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("createRuleBtn")
+        .addEventListener("click", async () => {
+          const ruleString = document.getElementById("ruleString").value;
+          const response = await fetch("/create_rule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rule_string: ruleString }),
+          });
+          const data = await response.json();
+          document.getElementById("resultOutput").textContent = response.ok
+            ? `Rule created successfully: ${JSON.stringify(data.ast)}`
+            : `Error: ${data.error}`;
+        });
+
+      document
+        .getElementById("evaluateRuleBtn")
+        .addEventListener("click", async () => {
+          const evaluationData =
+            document.getElementById("evaluationData").value;
+          const ast = JSON.parse(
+            document
+              .getElementById("resultOutput")
+              .textContent.match(/:{1}(.+)$/)[1] || "{}"
+          );
+          const response = await fetch("/evaluate_rule", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ast, data: JSON.parse(evaluationData) }),
+          });
+          const data = await response.json();
+          document.getElementById("resultOutput").textContent = response.ok
+            ? `Evaluation result: ${data.result}`
+            : `Error: ${data.error}`;
+        });
+    </script>
+  </body>
+</html>
